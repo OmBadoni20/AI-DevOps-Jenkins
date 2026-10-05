@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .env
+ai_failure_report.txt
+jenkins_failure.log
+test_output.log
