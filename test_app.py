@@ -17,7 +17,7 @@ def test_home(client):
 
     data = response.get_json()
 
-    assert data["status"] == "running"
+    assert data["status"] == "FAILED_STATUS"
 
 
 def test_health(client):
