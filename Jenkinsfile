@@ -5,7 +5,15 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'python -m pip install -r requirements.txt'
+                echo 'Creating isolated Python environment...'
+
+                bat 'python -m venv .venv'
+
+                echo 'Installing project dependencies...'
+
+                bat '.venv\\Scripts\\python -m pip install --upgrade pip'
+                bat '.venv\\Scripts\\python -m pip install -r requirements.txt'
+                bat '.venv\\Scripts\\python -m pip install pytest'
             }
         }
 
@@ -13,12 +21,12 @@ pipeline {
             steps {
                 script {
 
+                    echo 'Running automated tests...'
+
                     def testResult = bat(
                         returnStatus: true,
-                        script: 'pytest -v > test_output.log 2>&1'
+                        script: '.venv\\Scripts\\pytest -v > test_output.log 2>&1'
                     )
-
-                    bat 'type test_output.log'
 
                     if (testResult != 0) {
 
@@ -30,7 +38,8 @@ pipeline {
                                 variable: 'GEMINI_API_KEY'
                             )
                         ]) {
-                            bat 'python ai_log_analyzer.py test_output.log'
+
+                            bat '.venv\\Scripts\\python ai_log_analyzer.py test_output.log'
                         }
 
                         archiveArtifacts(
@@ -40,24 +49,35 @@ pipeline {
 
                         error 'Tests failed. AI failure analysis has been generated.'
                     }
+
+                    echo 'All automated tests passed successfully.'
                 }
             }
         }
 
         stage('Docker Build') {
             steps {
+                echo 'Building Docker image...'
+
                 bat 'docker build -t ai-devops-demo:jenkins .'
             }
         }
     }
 
     post {
+
         success {
+            echo '========================================'
             echo 'Pipeline completed successfully.'
+            echo 'Tests passed and Docker image was built.'
+            echo '========================================'
         }
 
         failure {
-            echo 'Pipeline failed. AI-assisted failure analysis was performed.'
+            echo '========================================'
+            echo 'Pipeline failed.'
+            echo 'AI-assisted failure analysis was performed.'
+            echo '========================================'
         }
     }
 }
